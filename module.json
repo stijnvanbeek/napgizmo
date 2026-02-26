@@ -1,0 +1,8 @@
+{
+    "Type": "nap::ModuleInfo", 
+    "mID": "napgizmo", 
+    "RequiredModules": [
+        "napparametergui"
+    ], 
+    "WindowsDllSearchPaths": []
+}
