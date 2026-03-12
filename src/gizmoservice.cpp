@@ -11,8 +11,8 @@
 #include <parameterguiservice.h>
 #include <parameterdirection.h>
 #include <parameterquat.h>
+#include <parameterfloatfcurve.h>
 #include <imguigizmoutils.h>
-
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::GizmoService)
 	RTTI_CONSTRUCTOR(nap::ServiceConfiguration*)
@@ -44,15 +44,23 @@ namespace nap
 		{
 			auto* param = static_cast<ParameterDirection*>(&parameter);
 			auto value = param->mValue;
-			if (ImGui::Direction(arrow->getMeshInstance(), param->mName.c_str(), value))
+			if (ImGui::Direction(arrow->getMeshInstance(), param->getDisplayName().c_str(), value))
 				param->setValue(value);
 		});
 		service->registerParameterEditor(RTTI_OF(ParameterQuat), [gnomon = mGnomonMesh.get()](Parameter& parameter)
 		{
 			auto* param = static_cast<ParameterQuat*>(&parameter);
 			auto value = param->mValue;
-			if (ImGui::Rotation(gnomon->getMeshInstance(), param->mName.c_str(), value))
+			if (ImGui::Rotation(gnomon->getMeshInstance(), param->getDisplayName().c_str(), value))
 				param->setValue(value);
+		});
+		service->registerParameterEditor(RTTI_OF(ParameterFloatFCurve), [](Parameter& parameter)
+		{
+			auto* param = static_cast<ParameterFloatFCurve*>(&parameter);
+			auto value = std::make_unique<math::FloatFCurve>();
+			value->mPoints = param->mValue->mPoints;
+			if (ImGui::Curve(param->getDisplayName().c_str(), *value))
+				param->setValue(*value);
 		});
 		return true;
 	}

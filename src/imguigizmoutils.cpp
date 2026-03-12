@@ -86,7 +86,10 @@ namespace ImGui
 
 		const auto id = GetID(label);
 		if (!ItemAdd(bb, id))
+		{
+			PopClipRect();
 			return false;
+		}
 
 		const glm::vec2 center = { bb.Min.x + w * 0.5f, bb.Min.y + h * 0.5f };
 		const float extent = w * 0.4f;
@@ -157,7 +160,10 @@ namespace ImGui
 
 		const auto id = GetID(label);
 		if (!ItemAdd(bb, id))
+		{
+			PopClipRect();
 			return false;
+		}
 
 		const glm::vec2 center = { bb.Min.x + w * 0.5f, bb.Min.y + h * 0.5f };
 		const float extent = w * 0.4f;
@@ -204,12 +210,16 @@ namespace ImGui
 		float w = CalcItemWidth();
 		float h = w * 0.5f;
 		ImRect bb(GetCursorScreenPos(), ImVec2(GetCursorScreenPos().x + w, GetCursorScreenPos().y + h));
+		const ImRect bb_outer = bb;
 		PushClipRect(bb.Min, bb.Max, false);
 		ItemSize(bb, GetStyle().FramePadding.y);
 
 		auto id = GetID(label);
 		if (!ItemAdd(bb, id))
+		{
+			PopClipRect();
 			return false;
+		}
 
 		// Draw canvas rectangle
 		ImDrawList* draw_list = GetWindowDrawList();
@@ -220,18 +230,22 @@ namespace ImGui
 		h = h - margin*2.0f;
 		ImVec2 tl(bb.GetTL().x + margin, bb.GetTL().y + margin);
 		bb = ImRect(tl, ImVec2(tl.x + w, tl.y + h));
-		ItemSize(bb, GetStyle().FramePadding.y);
-
 		id = GetID(nap::utility::stringFormat("%s_box", label).c_str());
-	    if (!ItemAdd(bb, id))
+		if (!ItemAdd(bb, id))
+		{
+			PopClipRect();
 			return false;
+		}
 
 		draw_list->AddRect(bb.Min, bb.Max, GetColorU32(ImGuiCol_WindowBg), GetStyle().FrameRounding, 0, 2);
 
-		// Bail if there are no curve points
+		// Bail if there are less than two curve points
 		// TODO: Account for this situation in the widget
-		if (curve.mPoints.empty())
+		if (curve.mPoints.size() < 2)
+		{
+			TextDisabled("Curve needs at least two points");
 			return false;
+		}
 
 		float max_time = curve.mPoints.back().mPos.mTime;
 		if (max_time <= 0.0f)
@@ -337,6 +351,7 @@ namespace ImGui
 	        ImU32 col = GetColorU32(hovered||held ? ImGuiCol_ButtonHovered : ImGuiCol_SliderGrab);
 	        draw_list->AddCircleFilled(hov_pos, hov_rad*0.75f, col);
 	    }
+		PopClipRect();
 
 		// Delete the point after rendering
 		if (point_to_delete != -1)
@@ -349,6 +364,10 @@ namespace ImGui
 			curve.invalidate();
 			value_changed = true;
 		}
+
+		// Label
+		const auto label_pos = ImVec2(bb_outer.Max.x + GetStyle().ItemInnerSpacing.x, bb_outer.Min.y + GetStyle().FramePadding.y);
+		RenderText(label_pos, label);
 
 	    return value_changed;
 	}
