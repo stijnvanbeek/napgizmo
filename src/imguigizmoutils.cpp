@@ -63,7 +63,7 @@ namespace ImGui
 			return a.z < b.z;
 		});
 
-		ImDrawList* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
+		auto* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
 		for (const auto& tri : triangles)
 		{
 			draw_list->AddTriangleFilled(tri.p[0], tri.p[1], tri.p[2],
@@ -110,7 +110,7 @@ namespace ImGui
 		}
 
 		// Rendering
-		ImDrawList* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
+		auto* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
 		draw_list->AddRectFilled(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), GetStyle().FrameRounding);
 
 		// Draw arrow
@@ -181,7 +181,7 @@ namespace ImGui
 		}
 
 		// Rendering
-		ImDrawList* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
+		auto* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
 		draw_list->AddRectFilled(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), GetStyle().FrameRounding);
 
 		// Gnomon has its own colors, so we pass white as base color to DrawMesh
@@ -222,7 +222,7 @@ namespace ImGui
 		}
 
 		// Draw canvas rectangle
-		ImDrawList* draw_list = GetWindowDrawList();
+		auto* draw_list = GetWindowDrawList();
 		draw_list->AddRectFilled(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), GetStyle().FrameRounding);
 
 		const float margin = w*0.05f;
