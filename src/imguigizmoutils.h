@@ -7,6 +7,7 @@
 #include <mesh.h>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/fwd.hpp>
+#include <fcurve.h>
 
 /**
  * This file contains NAP overrides for popular IMGui functions.
@@ -22,7 +23,7 @@ namespace ImGui
 	 * @param direction the direction normalized vector to edit, xyz only where w equals zero
 	 * @return true if the direction was changed
 	 */
-	bool Direction(const nap::MeshInstance& arrow, const char* label, glm::vec3& direction);
+	bool NAPAPI Direction(const nap::MeshInstance& arrow, const char* label, glm::vec3& direction);
 
 	/**
 	 * Widget for editing an orientation quaternion.
@@ -32,5 +33,11 @@ namespace ImGui
 	 * @param rotation the orientation quaternion to edit
 	 * @return true if the orientation was changed
 	 */
-	bool Rotation(const nap::MeshInstance& gnomon, const char* label, glm::quat& rotation);
+	bool NAPAPI Rotation(const nap::MeshInstance& gnomon, const char* label, glm::quat& rotation);
+
+	/**
+	 * Widget for editing float curves.
+	 * @return
+	 */
+	bool NAPAPI Curve(const char* label, nap::math::FloatFCurve& curve);
 }

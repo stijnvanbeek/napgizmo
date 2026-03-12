@@ -96,11 +96,11 @@ namespace ImGui
 
 		if (held)
 		{
-			const auto mouse_delta = ImVec2(GetIO().MouseDelta.x/extent, GetIO().MouseDelta.y/extent);
+			const auto mouse_dx = ImVec2(GetIO().MouseDelta.x/extent, GetIO().MouseDelta.y/extent);
 			auto dir = direction;
 			dir = glm::length(dir) < 1e-6f ? nap::math::Z_AXIS : glm::normalize(dir);
-			dir = glm::angleAxis(mouse_delta.x, nap::math::Y_AXIS) * dir;
-			dir = glm::angleAxis(mouse_delta.y, nap::math::X_AXIS) * dir;
+			dir = glm::angleAxis(mouse_dx.x, nap::math::Y_AXIS) * dir;
+			dir = glm::angleAxis(mouse_dx.y, nap::math::X_AXIS) * dir;
 			dir = glm::normalize(dir);
 			direction = dir;
 			pressed = true;
@@ -151,7 +151,7 @@ namespace ImGui
 
 		const float w = CalcItemWidth();
 		const float h = w * 0.5f;
-		const ImRect bb(GetCursorScreenPos(), ImVec2(GetCursorScreenPos().x + w, GetCursorScreenPos().y +h));
+		const ImRect bb(GetCursorScreenPos(), ImVec2(GetCursorScreenPos().x + w, GetCursorScreenPos().y + h));
 		PushClipRect(bb.Min, bb.Max, false);
 		ItemSize(bb, GetStyle().FramePadding.y);
 
@@ -167,9 +167,9 @@ namespace ImGui
 
 		if (held)
 		{
-			const auto mouse_delta = ImVec2(GetIO().MouseDelta.x/extent, GetIO().MouseDelta.y/extent);
-			rotation = glm::angleAxis(mouse_delta.x, nap::math::Y_AXIS) * rotation;
-			rotation = glm::angleAxis(mouse_delta.y, nap::math::X_AXIS) * rotation;
+			const auto mouse_dx = ImVec2(GetIO().MouseDelta.x/extent, GetIO().MouseDelta.y/extent);
+			rotation = glm::angleAxis(mouse_dx.x, nap::math::Y_AXIS) * rotation;
+			rotation = glm::angleAxis(mouse_dx.y, nap::math::X_AXIS) * rotation;
 			rotation = glm::normalize(rotation);
 			pressed = true;
 		}
@@ -192,5 +192,164 @@ namespace ImGui
 		RenderText(label_pos, label);
 
 		return pressed;
+	}
+
+
+	bool Curve(const char* label, nap::math::FloatFCurve& curve)
+	{
+	    if (GetCurrentContext()->CurrentWindow->SkipItems)
+	    	return false;
+
+		// Draw frame
+		float w = CalcItemWidth();
+		float h = w * 0.5f;
+		ImRect bb(GetCursorScreenPos(), ImVec2(GetCursorScreenPos().x + w, GetCursorScreenPos().y + h));
+		PushClipRect(bb.Min, bb.Max, false);
+		ItemSize(bb, GetStyle().FramePadding.y);
+
+		auto id = GetID(label);
+		if (!ItemAdd(bb, id))
+			return false;
+
+		// Draw canvas rectangle
+		ImDrawList* draw_list = GetWindowDrawList();
+		draw_list->AddRectFilled(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), GetStyle().FrameRounding);
+
+		const float margin = w*0.05f;
+		w = w - margin*2.0f;
+		h = h - margin*2.0f;
+		ImVec2 tl(bb.GetTL().x + margin, bb.GetTL().y + margin);
+		bb = ImRect(tl, ImVec2(tl.x + w, tl.y + h));
+		ItemSize(bb, GetStyle().FramePadding.y);
+
+		id = GetID(nap::utility::stringFormat("%s_box", label).c_str());
+	    if (!ItemAdd(bb, id))
+			return false;
+
+		draw_list->AddRect(bb.Min, bb.Max, GetColorU32(ImGuiCol_WindowBg), GetStyle().FrameRounding, 0, 2);
+
+		// Bail if there are no curve points
+		// TODO: Account for this situation in the widget
+		if (curve.mPoints.empty())
+			return false;
+
+		float max_time = curve.mPoints.back().mPos.mTime;
+		if (max_time <= 0.0f)
+			max_time = 1.0f;
+
+		bool value_changed = false;
+
+	    // Double-click to add a point
+	    if (IsItemHovered() && IsMouseDoubleClicked(0))
+	    {
+	    	float new_t = ((GetIO().MousePos.x - bb.Min.x) / w) * max_time;
+	    	float new_v = 1.0f - (GetIO().MousePos.y - bb.Min.y) / h;
+	    	curve.mPoints.push_back({{new_t, new_v}, {-0.1f, 0.0f}, {0.1f, 0.0f}});
+	    	curve.invalidate();
+	    	value_changed = true;
+	    }
+
+	    auto translate = [&](float t, float v) {
+	        return ImVec2(bb.Min.x + (t / max_time) * w, bb.Max.y - v * h);
+	    };
+
+		// Sort points
+		std::vector<nap::math::FloatFCurvePoint*> sorted;
+		for (auto& p : curve.mPoints)
+			sorted.emplace_back(&p);
+
+		std::sort(curve.mPoints.begin(), curve.mPoints.end(), [](const nap::math::FloatFCurvePoint& lhs, const nap::math::FloatFCurvePoint& rhs) {
+			return lhs.mPos.mTime < rhs.mPos.mTime;
+		});
+
+	    constexpr int segment_sample_rate = 8;
+		const int segment_count = sorted.size()*segment_sample_rate;
+		std::vector<glm::vec2> bezier;
+		bezier.reserve(segment_count);
+
+		for (size_t i = 0; i < sorted.size()-1; ++i)
+		{
+			const auto& p0 = sorted[i]->mPos;
+			const auto& p1 = sorted[i+1]->mPos;
+			const float dx = p1.mTime-p0.mTime;
+			const float step = dx/static_cast<float>(segment_count);
+			for (int j = 0; j <= segment_count; ++j)
+			{
+				const float t = p0.mTime + j*step;
+				bezier.emplace_back(t, curve.evaluate(t));
+			}
+		}
+
+		// Bezier lines
+		for (int i = 0; i < bezier.size()-1; ++i)
+		{
+			const auto& p0 = bezier[i];
+			const auto& p1 = bezier[i+1];
+			draw_list->AddLine(translate(p0.x, p0.y), translate(p1.x, p1.y), GetColorU32(ImGuiCol_PlotLines), 2.0f);
+		}
+
+		// Key points
+		int point_to_delete = -1;
+	    for (int i = 0; i < sorted.size(); ++i)
+	    {
+	    	auto& p0 = sorted[i]->mPos;
+	    	const auto& p1 = sorted[i+1]->mPos;
+
+	    	constexpr float hov_rad = 10.0f;
+	        ImVec2 hov_pos = translate(p0.mTime, p0.mValue);
+	        ImRect hov_bb(ImVec2(hov_pos.x - hov_rad, hov_pos.y - hov_rad), ImVec2(hov_pos.x + hov_rad, hov_pos.y + hov_rad));
+
+	    	const auto hov_id = GetID(nap::utility::stringFormat("point%d", i).c_str());
+	    	if (!ItemAdd(hov_bb, hov_id))
+	    		return false;
+
+	    	bool hovered, held;
+	        ButtonBehavior(hov_bb, hov_id, &hovered, &held);
+
+	    	// Mark point for deletion
+	    	// Ensure the first and last points cannot be deleted
+	    	if (hovered && i!=0 && i!=sorted.size()-1 && GetIO().MouseClicked[1])
+	    		point_to_delete = i;
+
+	    	// Drag point
+	        if (held)
+	        {
+	        	// Drag point
+	        	const auto mouse_dx = GetIO().MouseDelta;
+
+	            // Constrain time within neighbors
+	            float min_t = (i == 0) ? 0.0f : sorted[i-1]->mPos.mTime + 1e-3f;
+	            float max_t = (i == curve.mPoints.size()-1) ? max_time : p1.mTime - 1e-3f;
+
+	        	// Snap first and last point to 0 and 1
+	        	min_t = (i == curve.mPoints.size()-1) ? 1.0f : min_t;
+	        	max_t = (i == 0) ? 0.0f : max_t;
+
+	        	// Update time
+	            float new_t = p0.mTime + (mouse_dx.x/w) * max_time;
+				p0.mTime = glm::clamp(new_t, min_t, max_t);
+
+	            // Update value
+	            float new_v = p0.mValue - mouse_dx.y/h;
+	            p0.mValue = glm::clamp(new_v, 0.0f, 1.0f);
+	            value_changed = true;
+	        }
+	        ImU32 col = GetColorU32(hovered||held ? ImGuiCol_ButtonHovered : ImGuiCol_SliderGrab);
+	        draw_list->AddCircleFilled(hov_pos, hov_rad*0.75f, col);
+	    }
+
+		// Delete the point after rendering
+		if (point_to_delete != -1)
+		{
+			auto it = std::find_if(curve.mPoints.begin(), curve.mPoints.end(), [p=sorted[point_to_delete]](auto& other) {
+				return p == &other;
+			});
+			assert(it != curve.mPoints.end());
+			curve.mPoints.erase(it);
+			curve.invalidate();
+			value_changed = true;
+		}
+
+	    return value_changed;
 	}
 }
