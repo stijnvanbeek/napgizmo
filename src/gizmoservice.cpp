@@ -59,7 +59,7 @@ namespace nap
 			auto* param = static_cast<ParameterFloatFCurve*>(&parameter);
 			auto value = std::make_unique<math::FloatFCurve>();
 			value->mPoints = param->mValue->mPoints;
-			if (ImGui::Curve(param->getDisplayName().c_str(), *value))
+			if (ImGui::Curve(param->getDisplayName().c_str(), *value, 2.f))
 				param->setValue(*value);
 		});
 		return true;

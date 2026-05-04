@@ -17,6 +17,16 @@
 
 namespace ImGui
 {
+
+	ImVec2 glmToImGui(const glm::vec2& vec)
+	{
+		ImVec2 result;
+		result.x = vec.x;
+		result.y = vec.y;
+		return result;
+	}
+
+
 	bool drawTriangleMesh(const nap::MeshInstance& mesh, const glm::vec2& center, const float extent, const glm::mat4& transform, const glm::vec3& color)
 	{
 		// Simple 2D triangle struct
@@ -66,7 +76,7 @@ namespace ImGui
 		auto* draw_list = GetWindowDrawList(); assert(draw_list != nullptr);
 		for (const auto& tri : triangles)
 		{
-			draw_list->AddTriangleFilled(tri.p[0], tri.p[1], tri.p[2],
+			draw_list->AddTriangleFilled(glmToImGui(tri.p[0]), glmToImGui(tri.p[1]), glmToImGui(tri.p[2]),
 				ColorConvertFloat4ToU32(ImVec4(tri.diffuse.x, tri.diffuse.y, tri.diffuse.z, 1.0f)));
 		}
 		return true;
@@ -201,14 +211,14 @@ namespace ImGui
 	}
 
 
-	bool Curve(const char* label, nap::math::FloatFCurve& curve)
+	bool Curve(const char* label, nap::math::FloatFCurve& curve, float aspectRatio, float margin)
 	{
 	    if (GetCurrentContext()->CurrentWindow->SkipItems)
 	    	return false;
 
 		// Draw frame
 		float w = CalcItemWidth();
-		float h = w * 0.5f;
+		float h = w / aspectRatio;
 		ImRect bb(GetCursorScreenPos(), ImVec2(GetCursorScreenPos().x + w, GetCursorScreenPos().y + h));
 		const ImRect bb_outer = bb;
 		PushClipRect(bb.Min, bb.Max, false);
@@ -225,7 +235,6 @@ namespace ImGui
 		auto* draw_list = GetWindowDrawList();
 		draw_list->AddRectFilled(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), GetStyle().FrameRounding);
 
-		const float margin = w*0.05f;
 		w = w - margin*2.0f;
 		h = h - margin*2.0f;
 		ImVec2 tl(bb.GetTL().x + margin, bb.GetTL().y + margin);

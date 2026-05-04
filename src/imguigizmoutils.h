@@ -39,5 +39,5 @@ namespace ImGui
 	 * Widget for editing float curves.
 	 * @return
 	 */
-	bool NAPAPI Curve(const char* label, nap::math::FloatFCurve& curve);
+	bool NAPAPI Curve(const char* label, nap::math::FloatFCurve& curve, float aspectRatio = 2.f, float margin = 10.f);
 }
