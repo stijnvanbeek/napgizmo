@@ -19,8 +19,7 @@ namespace nap
 
 			ResourcePtr<math::FloatFCurve> mCurve; ///< Property:
 			glm::vec2 mPosition = { 0.f, 0.f };
-			float mWidth = 200.f;
-			float mAspectRatio = 2.f;
+			glm::vec3 mSize = { 200.f, 100.f, 0.f };
 			float mMargin = 5.f;
 
 		private:
