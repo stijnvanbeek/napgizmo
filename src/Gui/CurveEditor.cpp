@@ -1,5 +1,8 @@
 #include "CurveEditor.h"
 
+#include <imguigizmoutils.h>
+#include <imguiservice.h>
+
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::gui::CurveEditor)
 	RTTI_CONSTRUCTOR(nap::Core&)
 	RTTI_PROPERTY("Curve", &nap::gui::CurveEditor::mCurve, nap::rtti::EPropertyMetaData::Required)

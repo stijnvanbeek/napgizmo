@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Gui/Gui.h>
+#include <fcurve.h>
+#include <nap/core.h>
 
 namespace nap
 {
