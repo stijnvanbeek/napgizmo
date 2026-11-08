@@ -313,6 +313,14 @@ namespace ImGui
 
 		// Key points
 		int point_to_delete = -1;
+
+		// Point ids must be unique per widget: they are derived from the label's id part
+		// (everything after '###', or the whole label when there is no separator).
+		// Without it every curve widget in the same window would share its point ids.
+		std::string id_prefix(label);
+		const size_t label_sep = id_prefix.find("###");
+		if (label_sep != std::string::npos)
+			id_prefix.erase(0, label_sep + 3);
 	    for (int i = 0; i < sorted.size(); ++i)
 	    {
 	    	auto& p0 = sorted[i]->mPos;
@@ -322,7 +330,7 @@ namespace ImGui
 	        ImVec2 hov_pos = translate(p0.mTime, p0.mValue);
 	        ImRect hov_bb(ImVec2(hov_pos.x - hov_rad, hov_pos.y - hov_rad), ImVec2(hov_pos.x + hov_rad, hov_pos.y + hov_rad));
 
-	    	const auto hov_id = GetID(nap::utility::stringFormat("point%d", i).c_str());
+	    	const auto hov_id = GetID(nap::utility::stringFormat("%spoint%d", id_prefix.c_str(), i).c_str());
 	    	if (!ItemAdd(hov_bb, hov_id))
 	    		return false;
 
