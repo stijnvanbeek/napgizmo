@@ -27,7 +27,9 @@ namespace nap
 
 		void CurveEditor::draw()
 		{
-			ImGui::SetCursorPos(ImVec2(mPosition.x * mIMGuiService->getScale(), mPosition.y * mIMGuiService->getScale()));
+			const ImVec2& windowPadding = ImGui::GetStyle().WindowPadding;
+			ImGui::SetCursorPos(ImVec2(mPosition.x * mIMGuiService->getScale() + windowPadding.x,
+									   mPosition.y * mIMGuiService->getScale() + windowPadding.y));
 			ImGui::SetNextItemWidth(mSize.x * mIMGuiService->getScale());
 
 			// The widget's screen rect is derived the same way ImGui::Curve derives it:
